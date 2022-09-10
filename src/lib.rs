@@ -1,9 +1,11 @@
+#![warn(clippy::pedantic)]
 use std::collections::BTreeMap;
 
 use bitmaps::Bitmap;
 
 const SEGMENTSIZE: usize = 64;
 
+#[derive(Clone, Default, Debug)]
 pub struct SegmentMap<T: Copy> {
     data: BTreeMap<usize, Segment<T>>,
     first_index: usize,
@@ -20,28 +22,36 @@ impl<T: Copy> SegmentMap<T> {
         }
     }
 
-    pub fn get(&self, key: usize) -> Option<T> {
+    #[must_use]
+    pub fn get(&self, key: usize) -> Option<&T> {
         let segment_index = key / SEGMENTSIZE;
         let mantissa = key % SEGMENTSIZE;
 
-        let segment = self.data.get(&segment_index).unwrap();
-        segment.get(mantissa)
+        match self.data.get(&segment_index) {
+            Some(segment) => segment.get(mantissa),
+            None => None,
+        }
     }
 
-    pub fn get_mut(&mut self, key: usize) -> Option<T> {
+    #[must_use]
+    pub fn get_mut(&mut self, key: usize) -> Option<&mut T> {
         let segment_index = key / SEGMENTSIZE;
         let mantissa = key % SEGMENTSIZE;
 
-        let segment = self.data.get_mut(&segment_index).unwrap();
-        segment.get_mut(mantissa)
+        match self.data.get_mut(&segment_index) {
+            Some(segment) => segment.get_mut(mantissa),
+            None => None,
+        }
     }
 
+    /// # Panics
+    ///
+    /// if the underlying `BTreeMap` doesn't behave
     #[must_use]
     pub fn insert(&mut self, item: T) -> usize {
         if self.data.is_empty() {
             self.initialize();
-        };
-        if self.data.get(&self.last_index).unwrap().is_full() {
+        } else if self.data.get(&self.last_index).unwrap().is_full() {
             self.add_new_segment();
         };
 
@@ -62,6 +72,10 @@ impl<T: Copy> SegmentMap<T> {
         self.data.insert(0, Segment::<T>::new());
     }
 
+    /// # Panics
+    ///
+    /// if the key is not in the map
+    //TODO make this error instead
     pub fn remove(&mut self, key: usize) {
         let segment_index = key / SEGMENTSIZE;
         let mantissa = key % SEGMENTSIZE;
@@ -80,16 +94,19 @@ impl<T: Copy> SegmentMap<T> {
 
             if let Some(index) = previous_index {
                 self.data.get_mut(&index).unwrap().next_index = next_index;
+            } else if let Some(index) = next_index {
+                self.first_index = index;
             }
-            //TODO check if this is the 'first' segment and adjust self.first_index accordingly
         }
     }
 
+    /// # Panics
     pub fn iter() {
         todo!()
     }
 }
 
+#[derive(Clone, Copy, Debug, Hash)]
 struct Segment<T: Copy> {
     data: [Option<T>; SEGMENTSIZE],
     bitmap: Bitmap<SEGMENTSIZE>,
@@ -98,7 +115,7 @@ struct Segment<T: Copy> {
 }
 
 impl<T: Copy> Segment<T> {
-    pub(self) fn new() -> Self {
+    fn new() -> Self {
         Self {
             data: [None; SEGMENTSIZE],
             bitmap: Bitmap::<SEGMENTSIZE>::new(),
@@ -114,12 +131,12 @@ impl<T: Copy> Segment<T> {
         }
     }
     
-    fn get(&self, index: usize) -> Option<T> {
-        self.data[index]
+    fn get(&self, index: usize) -> Option<&T> {
+        self.data[index].as_ref()
     }
 
-    fn get_mut(&mut self, index: usize) -> Option<T> {
-        self.data[index]
+    fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        self.data[index].as_mut()
     }
 
     fn is_full(&self) -> bool {
@@ -145,4 +162,41 @@ impl<T: Copy> Segment<T> {
 
 #[cfg(test)]
 mod tests {
+    use crate::SegmentMap;
+
+    #[test]
+    fn basic_ops() {
+        let mut book = SegmentMap::<bool>::new();
+        let index = book.insert(true);
+        assert_eq!(index, 0);
+        assert!(book.get(index).unwrap());
+        book.remove(index);
+        assert!(book.get(index).is_none());
+    }
+
+    #[test]
+    fn mutate() {
+        let mut book = SegmentMap::<bool>::new();
+        let index = book.insert(true);
+        assert_eq!(*book.get(index).unwrap(), true);
+        *book.get_mut(index).unwrap() = false;
+        assert_eq!(*book.get(index).unwrap(), false);
+    }
+
+    #[test]
+    fn indices() {
+        let inserts = 1000;
+        let mut book = SegmentMap::<bool>::new();
+        for i in 0..=inserts {
+            let index = book.insert(true);
+            assert_eq!(index, i);
+        }
+
+        let some_index = 512;
+        book.remove(some_index);
+        assert_eq!(*book.get(0).unwrap(), true);
+        assert_eq!(*book.get(some_index - 1).unwrap(), true);
+        assert_eq!(*book.get(some_index + 1).unwrap(), true);
+        assert_eq!(*book.get(inserts).unwrap(), true);
+    }
 }
