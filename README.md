@@ -22,6 +22,6 @@ Listed are the durations of doing 1 million operations sequentially, so to get t
 |------|-----------|-------------------|--------------------------|
 | SegmentMap | 654.97ms | 305.44ms | 312.97ms |
 | HashMap | 983.93ms | 37.15ms | 579.11ms |
-| BTreeMap | 2.48ms | 97.58ms | 1.07s |
+| BTreeMap | 2.48s | 97.58ms | 1.07s |
 | Vec | 36.67ms | 17.45ms | 10.25s |
 
