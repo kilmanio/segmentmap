@@ -1,5 +1,5 @@
 #![warn(clippy::pedantic)]
-use std::collections::BTreeMap;
+use std::collections::HashMap;
 
 use array_macro::array;
 use bitmaps::Bitmap;
@@ -8,7 +8,7 @@ const SEGMENTSIZE: usize = 32;
 
 #[derive(Clone, Default, Debug)]
 pub struct SegmentMap<T> {
-    data: BTreeMap<usize, Segment<T>>,
+    data: HashMap<usize, Segment<T>>,
     first_index: usize,
     last_index: usize,
 }
@@ -17,7 +17,7 @@ impl<T> SegmentMap<T> {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            data: BTreeMap::new(),
+            data: HashMap::new(),
             first_index: 0,
             last_index: 0,
         }
@@ -47,8 +47,8 @@ impl<T> SegmentMap<T> {
 
     /// # Panics
     ///
-    /// if the underlying `BTreeMap` doesn't behave
-    #[must_use]
+    /// if the underlying `HashMap` doesn't behave
+    //    #[must_use]
     pub fn insert(&mut self, item: T) -> usize {
         if self.data.is_empty() {
             self.initialize();
@@ -367,5 +367,4 @@ mod tests {
         assert_eq!(iter.next(), Some((&true, c)));
         assert_eq!(iter.next(), None);
     }
-
 }
