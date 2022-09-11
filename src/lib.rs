@@ -2,17 +2,18 @@
 use std::collections::BTreeMap;
 
 use bitmaps::Bitmap;
+use array_macro::array;
 
-const SEGMENTSIZE: usize = 64;
+const SEGMENTSIZE: usize = 32;
 
 #[derive(Clone, Default, Debug)]
-pub struct SegmentMap<T: Copy> {
+pub struct SegmentMap<T> {
     data: BTreeMap<usize, Segment<T>>,
     first_index: usize,
     last_index: usize,
 }
 
-impl<T: Copy> SegmentMap<T> {
+impl<T> SegmentMap<T> {
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -99,25 +100,20 @@ impl<T: Copy> SegmentMap<T> {
             }
         }
     }
-
-    /// # Panics
-    pub fn iter() {
-        todo!()
-    }
 }
 
 #[derive(Clone, Copy, Debug, Hash)]
-struct Segment<T: Copy> {
+struct Segment<T> {
     data: [Option<T>; SEGMENTSIZE],
     bitmap: Bitmap<SEGMENTSIZE>,
     next_index: Option<usize>,
     previous_index: Option<usize>,
 }
 
-impl<T: Copy> Segment<T> {
+impl<T> Segment<T> {
     fn new() -> Self {
         Self {
-            data: [None; SEGMENTSIZE],
+            data: array!(_ => None; SEGMENTSIZE),
             bitmap: Bitmap::<SEGMENTSIZE>::new(),
             next_index: None,
             previous_index: None,
