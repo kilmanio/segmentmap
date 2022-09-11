@@ -115,6 +115,49 @@ impl<T> SegmentMap<T> {
             inner_index: first_inner_index,
         }
     }
+
+    /// Returns an 'Iterator' over all the present items, with their index
+    ///
+    /// # Panics
+    ///
+    /// If I messed up
+    #[must_use]
+    pub fn iter_with_index(&self) -> SegmentMapIndexIter<T> {
+        let first_inner_index = self.data.get(&self.first_index).unwrap().first_index();
+        SegmentMapIndexIter {
+            segmentmap: self,
+            outer_index: Some(self.first_index),
+            inner_index: first_inner_index,
+        }
+    }
+}
+
+pub struct SegmentMapIndexIter<'a, T> {
+    segmentmap: &'a SegmentMap<T>,
+    outer_index: Option<usize>,
+    inner_index: Option<usize>,
+}
+
+impl<'a, T> Iterator for SegmentMapIndexIter<'a, T> {
+    type Item = (&'a T, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.outer_index?;
+
+        let segment = self.segmentmap.data.get(&self.outer_index?)?;
+        let r = segment.get(self.inner_index?);
+        let index = self.outer_index? * SEGMENTSIZE + self.inner_index?;
+        self.inner_index = segment.next_index(self.inner_index?);
+
+        if self.inner_index.is_none() {
+            self.outer_index = segment.next_index;
+            if self.outer_index.is_some() {
+                self.inner_index = self.segmentmap.data.get(&self.outer_index?)?.first_index();
+            }
+        }
+
+        r.map(|item| (item, index))
+    }
 }
 
 pub struct SegmentMapIter<'a, T> {
@@ -298,4 +341,31 @@ mod tests {
         assert_eq!(iter.next(), Some(&true));
         assert_eq!(iter.next(), None);
     }
+
+    #[test]
+    fn index_iterator() {
+        let mut book = SegmentMap::<bool>::new();
+        let a = book.insert(true);
+        let b = book.insert(false);
+        let mut iter = book.iter_with_index();
+        assert_eq!(iter.next(), Some((&true, a)));
+        assert_eq!(iter.next(), Some((&false, b)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn index_iterator_gapped() {
+        let mut book = SegmentMap::<bool>::new();
+        let a = book.insert(true);
+        let b = book.insert(false);
+        let c = book.insert(true);
+        let d = book.insert(false);
+        book.remove(b);
+        book.remove(d);
+        let mut iter = book.iter_with_index();
+        assert_eq!(iter.next(), Some((&true, a)));
+        assert_eq!(iter.next(), Some((&true, c)));
+        assert_eq!(iter.next(), None);
+    }
+
 }
