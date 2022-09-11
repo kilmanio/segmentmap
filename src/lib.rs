@@ -101,6 +101,8 @@ impl<T> SegmentMap<T> {
         }
     }
 
+    /// Returns an 'Iterator' over all the present items
+    ///
     /// # Panics
     ///
     /// If I messed up
@@ -206,7 +208,7 @@ impl<T> Segment<T> {
 
 #[cfg(test)]
 mod tests {
-    use crate::SegmentMap;
+    use crate::{SegmentMap, SEGMENTSIZE};
 
     #[test]
     fn basic_ops() {
@@ -242,6 +244,29 @@ mod tests {
         assert_eq!(*book.get(some_index - 1).unwrap(), true);
         assert_eq!(*book.get(some_index + 1).unwrap(), true);
         assert_eq!(*book.get(inserts).unwrap(), true);
+    }
+
+    #[test]
+    fn reuse_inner() {
+        let mut book = SegmentMap::<bool>::new();
+        let index = book.insert(true);
+        assert_eq!(index, 0);
+        book.remove(index);
+        let index = book.insert(true);
+        assert_eq!(index, 0);
+    }
+
+    #[test]
+    fn reuse_outer() {
+        let mut book = SegmentMap::<bool>::new();
+        for _ in 0..SEGMENTSIZE {
+            let _ = book.insert(true);
+        }
+        for index in 0..SEGMENTSIZE {
+            book.remove(index);
+        }
+        let index = book.insert(true);
+        assert_eq!(index, 0);
     }
 
     #[test]
