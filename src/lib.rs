@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use array_macro::array;
 use bitmaps::Bitmap;
 
-const SEGMENTSIZE: usize = 32;
+const SEGMENTSIZE: usize = 128;
 
 #[derive(Clone, Default, Debug)]
 pub struct SegmentMap<T> {
