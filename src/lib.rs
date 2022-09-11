@@ -1,8 +1,8 @@
 #![warn(clippy::pedantic)]
 use std::collections::BTreeMap;
 
-use bitmaps::Bitmap;
 use array_macro::array;
+use bitmaps::Bitmap;
 
 const SEGMENTSIZE: usize = 32;
 
@@ -100,6 +100,46 @@ impl<T> SegmentMap<T> {
             }
         }
     }
+
+    /// # Panics
+    ///
+    /// If I messed up
+    #[must_use]
+    pub fn iter(&self) -> SegmentMapIter<T> {
+        let first_inner_index = self.data.get(&self.first_index).unwrap().first_index();
+        SegmentMapIter {
+            segmentmap: self,
+            outer_index: Some(self.first_index),
+            inner_index: first_inner_index,
+        }
+    }
+}
+
+pub struct SegmentMapIter<'a, T> {
+    segmentmap: &'a SegmentMap<T>,
+    outer_index: Option<usize>,
+    inner_index: Option<usize>,
+}
+
+impl<'a, T> Iterator for SegmentMapIter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.outer_index?;
+
+        let segment = self.segmentmap.data.get(&self.outer_index?)?;
+        let r = segment.get(self.inner_index?);
+        self.inner_index = segment.next_index(self.inner_index?);
+
+        if self.inner_index.is_none() {
+            self.outer_index = segment.next_index;
+            if self.outer_index.is_some() {
+                self.inner_index = self.segmentmap.data.get(&self.outer_index?)?.first_index();
+            }
+        }
+
+        r
+    }
 }
 
 #[derive(Clone, Copy, Debug, Hash)]
@@ -120,13 +160,21 @@ impl<T> Segment<T> {
         }
     }
 
+    fn first_index(&self) -> Option<usize> {
+        self.bitmap.first_index()
+    }
+
+    fn next_index(&self, index: usize) -> Option<usize> {
+        self.bitmap.next_index(index)
+    }
+
     fn get_available_index(&self) -> usize {
         match self.bitmap.last_index() {
             Some(index) => index + 1,
             None => 0,
         }
     }
-    
+
     fn get(&self, index: usize) -> Option<&T> {
         self.data[index].as_ref()
     }
@@ -194,5 +242,35 @@ mod tests {
         assert_eq!(*book.get(some_index - 1).unwrap(), true);
         assert_eq!(*book.get(some_index + 1).unwrap(), true);
         assert_eq!(*book.get(inserts).unwrap(), true);
+    }
+
+    #[test]
+    fn iterator() {
+        let mut book = SegmentMap::<bool>::new();
+        let _ = book.insert(true);
+        let _ = book.insert(false);
+        let _ = book.insert(true);
+        let _ = book.insert(false);
+        let mut iter = book.iter();
+        assert_eq!(iter.next(), Some(&true));
+        assert_eq!(iter.next(), Some(&false));
+        assert_eq!(iter.next(), Some(&true));
+        assert_eq!(iter.next(), Some(&false));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iterator_gapped() {
+        let mut book = SegmentMap::<bool>::new();
+        let _ = book.insert(true);
+        let a = book.insert(false);
+        let _ = book.insert(true);
+        let b = book.insert(false);
+        book.remove(a);
+        book.remove(b);
+        let mut iter = book.iter();
+        assert_eq!(iter.next(), Some(&true));
+        assert_eq!(iter.next(), Some(&true));
+        assert_eq!(iter.next(), None);
     }
 }
