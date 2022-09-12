@@ -60,6 +60,17 @@ impl<T> SegmentMap<T> {
         self.last_index * SEGMENTSIZE + mantissa
     }
 
+    /// # Panics
+    ///
+    /// if the key is not in the map
+    pub fn replace(&mut self, key: usize, item: T) {
+        let segment_index = key / SEGMENTSIZE;
+        let mantissa = key % SEGMENTSIZE;
+
+        let segment = self.data.get_mut(&segment_index).unwrap();
+        segment.replace(mantissa, item);
+    }
+
     fn add_new_segment(&mut self) {
         let old_last_index = self.last_index;
         self.last_index += 1;
@@ -243,6 +254,11 @@ impl<T> Segment<T> {
         available_index
     }
 
+    fn replace(&mut self, index: usize, item: T) {
+        assert!(self.bitmap.get(index));
+        self.data[index] = Some(item);
+    }
+
     fn remove(&mut self, index: usize) {
         self.bitmap.set(index, false);
         self.data[index] = None;
@@ -269,6 +285,15 @@ mod tests {
         let index = book.insert(true);
         assert_eq!(*book.get(index).unwrap(), true);
         *book.get_mut(index).unwrap() = false;
+        assert_eq!(*book.get(index).unwrap(), false);
+    }
+
+    #[test]
+    fn replace() {
+        let mut book = SegmentMap::<bool>::new();
+        let index = book.insert(true);
+        assert_eq!(*book.get(index).unwrap(), true);
+        book.replace(index, false);
         assert_eq!(*book.get(index).unwrap(), false);
     }
 
