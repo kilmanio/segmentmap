@@ -88,12 +88,12 @@ impl<T> SegmentMap<T> {
     ///
     /// if the key is not in the map
     //TODO make this error instead
-    pub fn remove(&mut self, key: usize) {
+    pub fn remove(&mut self, key: usize) -> T {
         let segment_index = key / SEGMENTSIZE;
         let mantissa = key % SEGMENTSIZE;
 
         let segment = self.data.get_mut(&segment_index).unwrap();
-        segment.remove(mantissa);
+        let ret = segment.remove(mantissa).unwrap();
 
         if segment.is_empty() {
             let previous_index = segment.previous_index;
@@ -110,6 +110,7 @@ impl<T> SegmentMap<T> {
                 self.first_index = index;
             }
         }
+        ret
     }
 
     /// Returns an 'Iterator' over all the present items
@@ -259,9 +260,10 @@ impl<T> Segment<T> {
         self.data[index] = Some(item);
     }
 
-    fn remove(&mut self, index: usize) {
+    fn remove(&mut self, index: usize) -> Option<T> {
+        let ret = self.data[index].take();
         self.bitmap.set(index, false);
-        self.data[index] = None;
+        ret
     }
 }
 
@@ -295,6 +297,15 @@ mod tests {
         assert_eq!(*book.get(index).unwrap(), true);
         book.replace(index, false);
         assert_eq!(*book.get(index).unwrap(), false);
+    }
+
+    #[test]
+    fn return_removed() {
+        let mut book = SegmentMap::<bool>::new();
+        let index = book.insert(true);
+        assert_eq!(*book.get(index).unwrap(), true);
+        let value = book.remove(index);
+        assert!(value);
     }
 
     #[test]
