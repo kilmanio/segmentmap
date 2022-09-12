@@ -120,7 +120,11 @@ impl<T> SegmentMap<T> {
     /// If I messed up
     #[must_use]
     pub fn iter(&self) -> SegmentMapIter<T> {
-        let first_inner_index = self.data.get(&self.first_index).unwrap().first_index();
+        let first_inner_index = self
+            .data
+            .get(&self.first_index)
+            .and_then(Segment::first_index);
+
         SegmentMapIter {
             segmentmap: self,
             outer_index: Some(self.first_index),
@@ -135,7 +139,11 @@ impl<T> SegmentMap<T> {
     /// If I messed up
     #[must_use]
     pub fn iter_with_index(&self) -> SegmentMapIndexIter<T> {
-        let first_inner_index = self.data.get(&self.first_index).unwrap().first_index();
+        let first_inner_index = self
+            .data
+            .get(&self.first_index)
+            .and_then(Segment::first_index);
+
         SegmentMapIndexIter {
             segmentmap: self,
             outer_index: Some(self.first_index),
@@ -360,6 +368,20 @@ mod tests {
         assert_eq!(iter.next(), Some(&false));
         assert_eq!(iter.next(), Some(&true));
         assert_eq!(iter.next(), Some(&false));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn iterator_empty() {
+        let book = SegmentMap::<bool>::new();
+        let mut iter = book.iter();
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn index_iterator_empty() {
+        let book = SegmentMap::<bool>::new();
+        let mut iter = book.iter_with_index();
         assert_eq!(iter.next(), None);
     }
 
