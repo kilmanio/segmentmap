@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use array_macro::array;
 use bitmaps::Bitmap;
 
-const SEGMENTSIZE: usize = 128;
+pub const SEGMENTSIZE: usize = 128;
 
 #[derive(Clone, Default, Debug)]
 pub struct SegmentMap<T> {
@@ -280,6 +280,15 @@ mod tests {
     use crate::{SegmentMap, SEGMENTSIZE};
 
     #[test]
+    fn list_indices() {
+        let mut book = SegmentMap::<bool>::new();
+        for _ in 0..1_000_000 {
+            let index = book.insert(true);
+            println!("{}", index);
+        }
+    }
+
+    #[test]
     fn basic_ops() {
         let mut book = SegmentMap::<bool>::new();
         let index = book.insert(true);
@@ -293,25 +302,25 @@ mod tests {
     fn mutate() {
         let mut book = SegmentMap::<bool>::new();
         let index = book.insert(true);
-        assert_eq!(*book.get(index).unwrap(), true);
+        assert!(*book.get(index).unwrap());
         *book.get_mut(index).unwrap() = false;
-        assert_eq!(*book.get(index).unwrap(), false);
+        assert!(!*book.get(index).unwrap());
     }
 
     #[test]
     fn replace() {
         let mut book = SegmentMap::<bool>::new();
         let index = book.insert(true);
-        assert_eq!(*book.get(index).unwrap(), true);
+        assert!(*book.get(index).unwrap());
         book.replace(index, false);
-        assert_eq!(*book.get(index).unwrap(), false);
+        assert!(!*book.get(index).unwrap());
     }
 
     #[test]
     fn return_removed() {
         let mut book = SegmentMap::<bool>::new();
         let index = book.insert(true);
-        assert_eq!(*book.get(index).unwrap(), true);
+        assert!(*book.get(index).unwrap());
         let value = book.remove(index);
         assert!(value);
     }
@@ -327,10 +336,10 @@ mod tests {
 
         let some_index = 512;
         book.remove(some_index);
-        assert_eq!(*book.get(0).unwrap(), true);
-        assert_eq!(*book.get(some_index - 1).unwrap(), true);
-        assert_eq!(*book.get(some_index + 1).unwrap(), true);
-        assert_eq!(*book.get(inserts).unwrap(), true);
+        assert!(*book.get(0).unwrap());
+        assert!(*book.get(some_index - 1).unwrap());
+        assert!(*book.get(some_index + 1).unwrap());
+        assert!(*book.get(inserts).unwrap());
     }
 
     #[test]
