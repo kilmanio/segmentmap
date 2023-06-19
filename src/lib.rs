@@ -82,6 +82,8 @@ impl<T> SegmentMap<T> {
 
     fn initialize(&mut self) {
         self.data.insert(0, Segment::<T>::new());
+        self.first_index = 0;
+        self.last_index = 0;
     }
 
     /// # Panics
@@ -102,6 +104,8 @@ impl<T> SegmentMap<T> {
 
             if let Some(index) = next_index {
                 self.data.get_mut(&index).unwrap().previous_index = previous_index;
+            } else if let Some(index) = previous_index {
+                self.last_index = index;
             }
 
             if let Some(index) = previous_index {
@@ -110,6 +114,7 @@ impl<T> SegmentMap<T> {
                 self.first_index = index;
             }
         }
+
         ret
     }
 
@@ -253,7 +258,7 @@ impl<T> Segment<T> {
     }
 
     fn is_empty(&self) -> bool {
-        self.bitmap.last_index() == None
+        self.bitmap.last_index().is_none()
     }
 
     fn insert(&mut self, item: T) -> usize {
@@ -433,5 +438,47 @@ mod tests {
         assert_eq!(iter.next(), Some((&true, a)));
         assert_eq!(iter.next(), Some((&true, c)));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn last_index_is_updated_when_last_segment_removed() {
+        let mut map = SegmentMap::<bool>::new();
+
+        for _ in 0..2 * SEGMENTSIZE {
+            map.insert(true);
+        }
+
+        assert_eq!(map.last_index, 1);
+
+        let i = map.insert(true);
+        assert_eq!(map.last_index, 2);
+
+        map.remove(i);
+        assert_eq!(map.last_index, 1);
+    }
+
+    #[test]
+    fn first_last_index_correct_when_segments_cleared() {
+        let mut map = SegmentMap::<bool>::new();
+
+        for _ in 0..2 * SEGMENTSIZE + 1 {
+            map.insert(true);
+        }
+
+        assert_eq!(map.last_index, 2);
+
+        for i in 0..2 * SEGMENTSIZE {
+            map.remove(i);
+        }
+
+        assert_eq!(map.first_index, 2);
+        assert_eq!(map.last_index, 2);
+
+        map.remove(2 * SEGMENTSIZE);
+
+        map.insert(true);
+
+        assert_eq!(map.first_index, 0);
+        assert_eq!(map.last_index, 0);
     }
 }
