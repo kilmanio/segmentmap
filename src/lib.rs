@@ -1,9 +1,8 @@
 #![warn(clippy::pedantic)]
+use std::array;
 use std::collections::HashMap;
 
-use array_macro::array;
 use bitmaps::Bitmap;
-
 pub const SEGMENTSIZE: usize = 128;
 
 #[derive(Clone, Default, Debug)]
@@ -223,7 +222,7 @@ struct Segment<T> {
 impl<T> Segment<T> {
     fn new() -> Self {
         Self {
-            data: array!(_ => None; SEGMENTSIZE),
+            data: array::from_fn(|_| None),
             bitmap: Bitmap::<SEGMENTSIZE>::new(),
             next_index: None,
             previous_index: None,
