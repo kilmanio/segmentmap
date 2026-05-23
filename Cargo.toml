@@ -1,8 +1,8 @@
 [package]
 name = "segmentmap"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
-description = "A collection that maintains insertion order"
+description = "DEPRECATED - use 'slab' or 'slotmap' instead. A collection that maintains insertion order"
 readme = "README.md"
 repository = "https://github.com/kilmanio/segmentmap"
 license = "MIT"

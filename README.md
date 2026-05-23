@@ -1,5 +1,7 @@
 # Segmentmap
 
+You probably want a [slotmap](https://crates.io/crates/slotmap) or a [slab](https://crates.io/crates/slab)
+
 A generic collection that preserves the order of items at all cost.
 Removing an item never restructures, keys/indices are unique per item.
 Internally uses a HashMap of arrays containing the items.

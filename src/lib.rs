@@ -1,4 +1,8 @@
 #![warn(clippy::pedantic)]
+#![deprecated(
+    since = "0.1.6",
+    note = "this crate is unmaintained; use 'slab' or 'slotmap' instead"
+)]
 use std::array;
 use std::collections::HashMap;
 
@@ -53,7 +57,7 @@ impl<T> SegmentMap<T> {
             self.initialize();
         } else if self.data.get(&self.last_index).unwrap().is_full() {
             self.add_new_segment();
-        };
+        }
 
         let mantissa = self.data.get_mut(&self.last_index).unwrap().insert(item);
         self.last_index * SEGMENTSIZE + mantissa
@@ -123,7 +127,7 @@ impl<T> SegmentMap<T> {
     ///
     /// If I messed up
     #[must_use]
-    pub fn iter(&self) -> SegmentMapIter<T> {
+    pub fn iter(&self) -> SegmentMapIter<'_, T> {
         let first_inner_index = self
             .data
             .get(&self.first_index)
@@ -142,7 +146,7 @@ impl<T> SegmentMap<T> {
     ///
     /// If I messed up
     #[must_use]
-    pub fn iter_with_index(&self) -> SegmentMapIndexIter<T> {
+    pub fn iter_with_index(&self) -> SegmentMapIndexIter<'_, T> {
         let first_inner_index = self
             .data
             .get(&self.first_index)
